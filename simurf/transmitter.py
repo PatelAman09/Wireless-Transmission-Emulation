@@ -5,7 +5,7 @@ Converts IP packets to modulated complex baseband signals
 
 import numpy as np
 import logging
-from utils.modulation import ModulationSchemes
+from simurf.utils.modulation import ModulationSchemes
 
 logger = logging.getLogger(__name__)
 

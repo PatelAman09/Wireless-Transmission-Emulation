@@ -6,7 +6,7 @@ Recovers IP packets from received complex baseband signals
 import numpy as np
 import logging
 from typing import Optional
-from utils.modulation import ModulationSchemes
+from simurf.utils.modulation import ModulationSchemes
 
 logger = logging.getLogger(__name__)
 
