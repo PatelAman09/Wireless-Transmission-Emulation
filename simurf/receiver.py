@@ -6,7 +6,8 @@ Recovers IP packets from received complex baseband signals
 import numpy as np
 import logging
 from typing import Optional
-from simurf.utils.modulation import ModulationSchemes
+from scipy import signal
+from utils.modulation import ModulationSchemes
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class WirelessReceiver:
                  symbol_rate: float = 1e5, sync_threshold: float = 0.7):
         """
         Initialize wireless receiver
-
+        
         Args:
             modulation: Modulation scheme ('bpsk', 'qpsk', '16qam')
             sample_rate: Sampling rate in Hz
@@ -47,10 +48,10 @@ class WirelessReceiver:
     def receive(self, rx_signal: np.ndarray) -> Optional[bytes]:
         """
         Complete reception chain: baseband signal -> symbols -> bits -> packet
-
+        
         Args:
             rx_signal: Received complex baseband signal
-
+            
         Returns:
             Recovered packet bytes or None if reception failed
         """
@@ -85,10 +86,10 @@ class WirelessReceiver:
     def signal_to_symbols(self, rx_signal: np.ndarray) -> Optional[np.ndarray]:
         """
         Convert received signal to symbol estimates
-
+        
         Args:
             rx_signal: Input complex baseband signal
-
+            
         Returns:
             Symbol estimates or None if processing failed
         """
@@ -124,7 +125,7 @@ class WirelessReceiver:
     def _get_matched_filter(self) -> np.ndarray:
         """
         Generate matched filter (same as transmit pulse shaping filter)
-
+        
         Returns:
             Matched filter impulse response
         """
@@ -166,10 +167,10 @@ class WirelessReceiver:
     def _symbol_timing_recovery(self, signal: np.ndarray) -> int:
         """
         Simple symbol timing recovery using maximum energy method
-
+        
         Args:
             signal: Filtered received signal
-
+            
         Returns:
             Optimal timing offset in samples
         """
@@ -190,10 +191,10 @@ class WirelessReceiver:
     def symbols_to_bits(self, symbols: np.ndarray) -> Optional[np.ndarray]:
         """
         Demodulate symbols to recover bit stream
-
+        
         Args:
             symbols: Received symbol estimates
-
+            
         Returns:
             Demodulated bits or None if demodulation failed
         """
@@ -217,10 +218,10 @@ class WirelessReceiver:
     def bits_to_packet(self, bits: np.ndarray) -> Optional[bytes]:
         """
         Extract packet from bit stream using frame synchronization
-
+        
         Args:
             bits: Demodulated bit stream
-
+            
         Returns:
             Recovered packet bytes or None if frame not found
         """
@@ -282,11 +283,11 @@ class WirelessReceiver:
     def _find_sync_pattern(self, bits: np.ndarray, pattern: np.ndarray) -> int:
         """
         Find synchronization pattern in bit stream using correlation
-
+        
         Args:
             bits: Input bit stream
             pattern: Sync pattern to find
-
+            
         Returns:
             Position of pattern start or -1 if not found
         """
@@ -315,11 +316,11 @@ class WirelessReceiver:
     def estimate_ber(self, known_bits: np.ndarray, received_bits: np.ndarray) -> float:
         """
         Estimate bit error rate by comparing with known sequence
-
+        
         Args:
             known_bits: Known transmitted bits
             received_bits: Received bit estimates
-
+            
         Returns:
             Bit error rate
         """

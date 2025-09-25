@@ -14,26 +14,31 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash simurf
+# Create directory structure
+RUN mkdir -p utils test
 
-# Copy application code and set permissions
-COPY --chown=simurf:simurf main.py transmitter.py channel.py receiver.py test_sample.py usage_example.py ./
-COPY --chown=simurf:simurf utils/ ./utils/
+# Copy application files
+COPY main.py .
+COPY transmitter.py .
+COPY channel.py .
+COPY receiver.py .
+COPY test_sample.py .
+COPY usage_example.py .
 
-# Switch to non-root user
-USER simurf
+# Copy utils module
+COPY utils/ ./utils/
+
+# Expose ports for packet I/O
+EXPOSE 12345 12346
 
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Expose ports
-EXPOSE 12345 12346
-
-# Health check (ensure your app listens on 12345)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import socket; s=socket.socket(); s.settimeout(1); s.connect(('localhost', 12345)); s.close()" || exit 1
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash simurf
+RUN chown -R simurf:simurf /app
+USER simurf
 
 # Default command
 CMD ["python", "main.py", "--verbose"]
