@@ -38,7 +38,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Default command
 CMD ["python", "main.py", "--verbose"]
-
-# Alternative commands can be run as:
-# docker run simurf python main.py --channel rayleigh --snr 15 --modulation qpsk
-# docker run simurf python -m pytest test/ -v
