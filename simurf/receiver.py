@@ -3,10 +3,11 @@ Wireless Receiver Module
 Recovers IP packets from received complex baseband signals
 """
 
-import numpy as np
 import logging
 from typing import Optional
-from scipy import signal
+
+import numpy as np
+
 from utils.modulation import ModulationSchemes
 
 logger = logging.getLogger(__name__)

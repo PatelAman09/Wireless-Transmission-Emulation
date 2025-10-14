@@ -3,12 +3,57 @@ Wireless Transmitter Module
 Converts IP packets to modulated complex baseband signals
 """
 
-import numpy as np
 import logging
-from typing import Optional
+
+import numpy as np
+
 from utils.modulation import ModulationSchemes
 
 logger = logging.getLogger(__name__)
+
+
+def _root_raised_cosine(t: np.ndarray, beta: float, T: float) -> np.ndarray:
+    """
+    Generate root raised cosine filter impulse response
+
+    Args:
+        t: Time vector
+        beta: Roll-off factor
+        T: Symbol period
+
+    Returns:
+        Filter impulse response
+    """
+    # Avoid division by zero
+    idx_zero = np.where(np.abs(t) < 1e-10)[0]
+    idx_beta = np.where(np.abs(np.abs(t) - T / (4 * beta)) < 1e-10)[0]
+
+    h = np.zeros_like(t)
+
+    # Handle special cases
+    if len(idx_zero) > 0:
+        h[idx_zero] = (1 / T) * (1 + beta * (4 / np.pi - 1))
+
+    if len(idx_beta) > 0:
+        h[idx_beta] = (beta / (T * np.sqrt(2))) * \
+                      ((1 + 2 / np.pi) * np.sin(np.pi / (4 * beta)) +
+                       (1 - 2 / np.pi) * np.cos(np.pi / (4 * beta)))
+
+    # General case
+    idx_general = np.where((np.abs(t) > 1e-10) &
+                           (np.abs(np.abs(t) - T / (4 * beta)) > 1e-10))[0]
+
+    if len(idx_general) > 0:
+        numerator = np.sin(np.pi * t[idx_general] / T * (1 - beta)) + \
+                    4 * beta * t[idx_general] / T * \
+                    np.cos(np.pi * t[idx_general] / T * (1 + beta))
+
+        denominator = np.pi * t[idx_general] / T * \
+                      (1 - (4 * beta * t[idx_general] / T) ** 2)
+
+        h[idx_general] = (1 / T) * numerator / denominator
+
+    return h
 
 
 class WirelessTransmitter:
@@ -106,7 +151,7 @@ class WirelessTransmitter:
         t = np.arange(-filter_span / 2, filter_span / 2, 1 / self.samples_per_symbol)
 
         # Root raised cosine impulse response
-        rrc_filter = self._root_raised_cosine(t, beta, 1 / self.symbol_rate)
+        rrc_filter = _root_raised_cosine(t, beta, 1 / self.symbol_rate)
 
         # Upsample symbols by inserting zeros
         upsampled = np.zeros(len(symbols) * self.samples_per_symbol, dtype=complex)
@@ -117,49 +162,6 @@ class WirelessTransmitter:
 
         logger.debug(f"Pulse shaped to {len(shaped_signal)} samples")
         return shaped_signal
-
-    def _root_raised_cosine(self, t: np.ndarray, beta: float, T: float) -> np.ndarray:
-        """
-        Generate root raised cosine filter impulse response
-        
-        Args:
-            t: Time vector
-            beta: Roll-off factor
-            T: Symbol period
-            
-        Returns:
-            Filter impulse response
-        """
-        # Avoid division by zero
-        idx_zero = np.where(np.abs(t) < 1e-10)[0]
-        idx_beta = np.where(np.abs(np.abs(t) - T / (4 * beta)) < 1e-10)[0]
-
-        h = np.zeros_like(t)
-
-        # Handle special cases
-        if len(idx_zero) > 0:
-            h[idx_zero] = (1 / T) * (1 + beta * (4 / np.pi - 1))
-
-        if len(idx_beta) > 0:
-            h[idx_beta] = (beta / (T * np.sqrt(2))) * \
-                          ((1 + 2 / np.pi) * np.sin(np.pi / (4 * beta)) +
-                           (1 - 2 / np.pi) * np.cos(np.pi / (4 * beta)))
-
-        # General case
-        idx_general = np.where((np.abs(t) > 1e-10) &
-                               (np.abs(np.abs(t) - T / (4 * beta)) > 1e-10))[0]
-
-        if len(idx_general) > 0:
-            numerator = np.sin(np.pi * t[idx_general] / T * (1 - beta)) + \
-                        4 * beta * t[idx_general] / T * \
-                        np.cos(np.pi * t[idx_general] / T * (1 + beta))
-
-            denominator = np.pi * t[idx_general] / T * \
-                          (1 - (4 * beta * t[idx_general] / T) ** 2)
-
-            h[idx_general] = (1 / T) * numerator / denominator
-
-        return h
 
     def transmit(self, packet_data: bytes) -> np.ndarray:
         """
