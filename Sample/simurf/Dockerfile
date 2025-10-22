@@ -17,6 +17,11 @@ COPY src/ ./src/
 COPY config/ ./config/
 
 # Create directory for data exchange
-RUN mkdir /data
+RUN mkdir -p /data
 
-CMD ["python", "./src/run_simurf.py"]
+# Expose network ports
+EXPOSE 5000/udp
+EXPOSE 5001/tcp
+
+# Run the simulation server
+CMD ["python", "./src/simulation_server.py"]
