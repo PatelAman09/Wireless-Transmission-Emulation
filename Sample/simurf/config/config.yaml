@@ -1,24 +1,18 @@
-# SimuRF Configuration File
-
-# Transmitter Configuration
 transmitter:
-  sample_rate: 1000000    # 1 MHz - samples per second
-  carrier_freq: 100000    # 100 kHz - center frequency
-  symbol_rate: 50000      # 50 ksymbols/s - symbol transmission rate
+  sample_rate: 1000000    # 1 MHz
+  carrier_freq: 10000     # Lower frequency for stability
+  symbol_rate: 10000      # 10 ksymbols/s (more samples per symbol)
 
-# Receiver Configuration
 receiver:
-  sample_rate: 1000000    # Must match transmitter
-  carrier_freq: 100000    # Must match transmitter
-  symbol_rate: 50000      # Must match transmitter
+  sample_rate: 1000000
+  carrier_freq: 10000
+  symbol_rate: 10000
 
-# Channel Simulation Configuration
 channel:
-  snr_db: 20              # Signal-to-Noise Ratio in decibels (higher = less noise)
-  noise_factor: 0.1       # Simplified noise scaling factor
+  snr_db: 30              # High SNR for debugging
+  noise_factor: 0.01
 
-# Network Interface Configuration
 network:
-  host: '0.0.0.0'         # Listen on all interfaces
-  udp_port: 5000          # UDP port for connectionless packets
-  tcp_port: 5001          # TCP port for connection-oriented packets
+  host: '0.0.0.0'
+  udp_port: 5000
+  tcp_port: 5001

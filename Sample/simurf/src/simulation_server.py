@@ -3,7 +3,6 @@ import signal
 import sys
 import time
 from datetime import datetime
-import numpy as np
 
 sys.path.append('/app/src')
 
@@ -68,8 +67,8 @@ class SimulationServer:
                 'symbol_rate': 50000
             },
             'channel': {
-                'snr_db': 20,
-                'noise_factor': 0.1
+                'snr_db': 25,  # Increased for better reliability
+                'noise_factor': 0.05
             },
             'network': {
                 'host': '0.0.0.0',
@@ -98,18 +97,19 @@ class SimulationServer:
         try:
             # Extract payload data
             payload = packet['data']
+            original_data_length = len(payload)
 
-            # Step 1: Transmit
+            # Step 1: Transmit (now returns signal AND symbol count)
             print("\n[TRANSMITTER] Encoding and modulating...")
-            tx_signal = self.transmitter.transmit(payload)
+            tx_signal, original_symbol_count = self.transmitter.transmit(payload)
 
             # Step 2: Channel simulation
             print("\n[CHANNEL] Adding noise and impairments...")
             rx_signal = self.channel.process(tx_signal)
 
-            # Step 3: Receive
+            # Step 3: Receive (pass expected data length for synchronization)
             print("\n[RECEIVER] Demodulating and decoding...")
-            decoded_data = self.receiver.receive(rx_signal)
+            decoded_data = self.receiver.receive(rx_signal, original_data_length)
 
             # Calculate metrics
             processing_time = time.time() - start_time
@@ -124,14 +124,19 @@ class SimulationServer:
             bit_errors = 0
             ber = 0.0
 
-            if decoded_data and len(payload) == len(decoded_data):
-                for orig_byte, recv_byte in zip(payload, decoded_data):
+            if decoded_data:
+                # Compare common portion of data
+                min_len = min(len(payload), len(decoded_data))
+                for i in range(min_len):
+                    orig_byte = payload[i]
+                    recv_byte = decoded_data[i]
                     # Count bit differences
                     xor = orig_byte ^ recv_byte
                     bit_errors += bin(xor).count('1')
 
-                total_bits = len(payload) * 8
-                ber = bit_errors / total_bits if total_bits > 0 else 0
+                total_bits = min_len * 8
+                if total_bits > 0:
+                    ber = bit_errors / total_bits
 
                 self.sim_stats['total_bits_transmitted'] += total_bits
                 self.sim_stats['total_bit_errors'] += bit_errors
@@ -140,15 +145,18 @@ class SimulationServer:
             result = {
                 'success': success,
                 'original_size': len(payload),
-                'received_size': len(decoded_data),
+                'received_size': len(decoded_data) if decoded_data else 0,
                 'bit_errors': bit_errors,
                 'bit_error_rate': ber,
                 'processing_time_ms': processing_time * 1000,
                 'snr_db': self.config['channel']['snr_db'],
                 'original_data': payload.hex() if len(payload) <= 100 else payload[:100].hex() + '...',
-                'received_data': decoded_data.hex() if len(decoded_data) <= 100 else decoded_data[:100].hex() + '...',
+                'received_data': decoded_data.hex() if decoded_data and len(decoded_data) <= 100 else (
+                    decoded_data[:100].hex() + '...' if decoded_data else ''),
                 'match': payload == decoded_data,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'symbols_generated': original_symbol_count,
+                'samples_generated': len(tx_signal)
             }
 
             # Print results
@@ -156,14 +164,22 @@ class SimulationServer:
             print("SIMULATION RESULTS")
             print(f"{'=' * 60}")
             print(f"Success: {result['success']}")
+            print(f"Original Size: {result['original_size']} bytes")
+            print(f"Received Size: {result['received_size']} bytes")
+            print(f"Symbols Generated: {result['symbols_generated']}")
+            print(f"Samples Generated: {result['samples_generated']}")
             print(f"Bit Errors: {bit_errors}")
             print(f"Bit Error Rate: {ber:.6f}")
             print(f"Processing Time: {processing_time * 1000:.2f} ms")
             print(f"Data Match: {result['match']}")
 
             if not result['match']:
-                print(f"\nOriginal: {payload[:50]}")
-                print(f"Received: {decoded_data[:50]}")
+                print(f"\nData Comparison:")
+                print(f"Original: {payload[:50]}...")
+                print(f"Received: {decoded_data[:50] if decoded_data else 'NO DATA'}...")
+
+                if decoded_data and len(payload) != len(decoded_data):
+                    print(f"Length mismatch: {len(payload)} vs {len(decoded_data)} bytes")
 
             print(f"{'=' * 60}\n")
 
@@ -190,6 +206,7 @@ class SimulationServer:
         print(f"Symbol Rate: {self.config['transmitter']['symbol_rate']} symbols/s")
         print(f"Modulation: QPSK (Quadrature Phase Shift Keying)")
         print(f"Channel SNR: {self.config['channel']['snr_db']} dB")
+        print(f"Network Ports: UDP:{self.config['network']['udp_port']}, TCP:{self.config['network']['tcp_port']}")
         print("=" * 70 + "\n")
 
         # Start network interface
@@ -226,10 +243,17 @@ class SimulationServer:
         print(f"  Successful: {self.sim_stats['successful_transmissions']}")
         print(f"  Failed: {self.sim_stats['failed_transmissions']}")
 
+        if self.sim_stats['total_simulations'] > 0:
+            success_rate = (self.sim_stats['successful_transmissions'] /
+                            self.sim_stats['total_simulations'] * 100)
+            print(f"  Success Rate: {success_rate:.1f}%")
+
         if self.sim_stats['total_bits_transmitted'] > 0:
             overall_ber = (self.sim_stats['total_bit_errors'] /
                            self.sim_stats['total_bits_transmitted'])
             print(f"  Overall BER: {overall_ber:.6f}")
+            print(f"  Total Bits: {self.sim_stats['total_bits_transmitted']}")
+            print(f"  Total Errors: {self.sim_stats['total_bit_errors']}")
 
         print("=" * 70 + "\n")
 

@@ -9,19 +9,27 @@ class Transmitter:
         self.carrier_freq = config['transmitter']['carrier_freq']
         self.symbol_rate = config['transmitter']['symbol_rate']
         self.samples_per_symbol = int(self.sample_rate / self.symbol_rate)
+        print(f"Transmitter: Samples per symbol = {self.samples_per_symbol}")
 
     def add_preamble(self, symbols):
-        """Add synchronization preamble"""
-        # BPSK preamble for better synchronization: alternating 1, -1
-        preamble_length = 16
-        preamble = [1, -1] * (preamble_length // 2)  # Alternating pattern
-        preamble = [x * (1 + 1j) / np.sqrt(2) for x in preamble]  # Convert to complex
+        """Add simple but effective preamble"""
+        # Use alternating 1,-1 pattern for easy detection
+        preamble_length = 32
+        preamble = []
+        for i in range(preamble_length):
+            if i % 2 == 0:
+                preamble.append(1.0 + 0j)  # Real only for preamble
+            else:
+                preamble.append(-1.0 + 0j)
 
-        # Add start frame delimiter
-        sfd = [1, 1, -1, -1, 1, 1, -1, -1]  # Specific pattern
-        sfd = [x * (1 + 1j) / np.sqrt(2) for x in sfd]
+        # Simple SFD pattern
+        sfd = [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0]  # Repeated pattern
+        sfd = [x + 0j for x in sfd]
 
-        return np.concatenate([preamble, sfd, symbols])
+        full_preamble = np.concatenate([preamble, sfd])
+        print(f"Transmitter: Added preamble of {len(full_preamble)} symbols")
+
+        return np.concatenate([full_preamble, symbols])
 
     def bytes_to_bits(self, data):
         """Convert bytes to list of bits"""
@@ -31,68 +39,52 @@ class Transmitter:
         return bits
 
     def bits_to_symbols(self, bits):
-        """Convert bits to QPSK symbols with proper padding"""
+        """Convert bits to QPSK symbols with simple mapping"""
         # Ensure even number of bits
         if len(bits) % 2 != 0:
-            bits.append(0)  # Add padding bit
+            bits.append(0)
 
         symbols = []
         for i in range(0, len(bits), 2):
             bit1, bit2 = bits[i], bits[i + 1]
-            # QPSK mapping with normalized power
+
+            # Simple QPSK mapping (no normalization yet)
             if bit1 == 0 and bit2 == 0:
-                symbol = (1 + 1j) / np.sqrt(2)
+                symbol = 1 + 1j  # 45°
             elif bit1 == 0 and bit2 == 1:
-                symbol = (1 - 1j) / np.sqrt(2)
+                symbol = 1 - 1j  # 315°
             elif bit1 == 1 and bit2 == 0:
-                symbol = (-1 + 1j) / np.sqrt(2)
+                symbol = -1 + 1j  # 135°
             else:  # 1,1
-                symbol = (-1 - 1j) / np.sqrt(2)
+                symbol = -1 - 1j  # 225°
             symbols.append(symbol)
 
-        return np.array(symbols)
+        symbols = np.array(symbols)
+        # Normalize to unit power
+        rms = np.sqrt(np.mean(np.abs(symbols) ** 2))
+        symbols = symbols / rms
+        print(f"Transmitter: Symbol RMS power: {np.sqrt(np.mean(np.abs(symbols) ** 2)):.3f}")
+        return symbols
 
-    def create_pulse_filter(self, span=6):
-        """Create raised cosine filter with reduced span for less delay"""
-        t = np.arange(-span * self.samples_per_symbol, span * self.samples_per_symbol + 1)
-        t_norm = t / self.samples_per_symbol
-
-        # Raised cosine filter
-        beta = 0.35  # Roll-off factor
-        with np.errstate(divide='ignore', invalid='ignore'):
-            sinc_part = np.sinc(t_norm)
-            cos_part = np.cos(np.pi * beta * t_norm)
-            denom = 1 - (2 * beta * t_norm) ** 2
-
-            filter_taps = sinc_part * cos_part / denom
-            filter_taps[np.isnan(filter_taps)] = 1.0  # Handle division by zero
-
-        # Normalize filter energy
+    def create_pulse_filter(self):
+        """Create simple rectangular pulse for debugging"""
+        # Use rectangular pulses for now to avoid filter issues
+        filter_taps = np.ones(self.samples_per_symbol)
         filter_taps = filter_taps / np.sqrt(np.sum(filter_taps ** 2))
+        print(f"Transmitter: Using rectangular pulse, {len(filter_taps)} taps")
         return filter_taps
 
     def modulate(self, symbols):
-        """Upsample and apply pulse shaping with proper delay handling"""
-        # Upsample symbols
+        """Simple modulation with rectangular pulses"""
+        # Upsample symbols (zero-order hold)
         upsampled = np.zeros(len(symbols) * self.samples_per_symbol, dtype=complex)
-        upsampled[::self.samples_per_symbol] = symbols
+        for i in range(len(symbols)):
+            start_idx = i * self.samples_per_symbol
+            end_idx = start_idx + self.samples_per_symbol
+            upsampled[start_idx:end_idx] = symbols[i]
 
-        # Apply pulse shaping
-        filter_taps = self.create_pulse_filter()
-
-        # Use 'full' convolution and trim to maintain timing
-        shaped_signal = np.convolve(upsampled, filter_taps, mode='full')
-
-        # Trim to remove the filter transient at the beginning
-        # Keep the main part of the signal
-        trim_start = len(filter_taps) // 2
-        trim_end = -(len(filter_taps) // 2)
-        if trim_end == 0:
-            trim_end = None
-
-        shaped_signal = shaped_signal[trim_start:trim_end]
-
-        return shaped_signal
+        print(f"Transmitter: After upsampling: {len(upsampled)} samples")
+        return upsampled
 
     def add_carrier(self, baseband_signal):
         """Add carrier frequency"""
@@ -112,15 +104,22 @@ class Transmitter:
         symbols = self.bits_to_symbols(bits)
         print(f"Transmitter: Generated {len(symbols)} QPSK symbols")
 
+        # Debug: Show first few symbols and their expected bits
+        print("Transmitter: First 5 data symbols (expected):")
+        for i in range(min(5, len(symbols))):
+            expected_bits = bits[i * 2:(i + 1) * 2]
+            print(f"  Symbol {i}: bits {expected_bits} -> {symbols[i]}")
+
         # Add preamble for synchronization
         symbols_with_preamble = self.add_preamble(symbols)
         print(f"Transmitter: Total symbols with preamble: {len(symbols_with_preamble)}")
 
-        # Modulate
+        # Modulate with simple rectangular pulses
         baseband_signal = self.modulate(symbols_with_preamble)
-        print(f"Transmitter: Baseband signal length = {len(baseband_signal)}")
 
         # Add carrier
         transmitted_signal = self.add_carrier(baseband_signal)
 
-        return transmitted_signal, len(symbols)  # Return original symbol count for receiver
+        print(f"Transmitter: Final signal length = {len(transmitted_signal)} samples")
+
+        return transmitted_signal, len(symbols)
