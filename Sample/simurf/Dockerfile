@@ -1,14 +1,22 @@
-# Base Python image
-FROM python:3.10-slim
+FROM python:3.9-slim
 
-# Set working directory
-WORKDIR /simurf
+WORKDIR /app
 
-# Copy files
-COPY requirements.txt ./
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY .. .
+# Copy source code
+COPY src/ ./src/
+COPY config/ ./config/
 
-# Entry point
-CMD ["python", "run_simurf.py"]
+# Create directory for data exchange
+RUN mkdir /data
+
+CMD ["python", "./src/run_simurf.py"]

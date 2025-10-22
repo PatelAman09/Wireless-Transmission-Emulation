@@ -1,0 +1,13 @@
+transmitter:
+  sample_rate: 1000000    # 1 MHz
+  carrier_freq: 100000    # 100 kHz
+  symbol_rate: 50000      # 50 ksymbols/s
+
+receiver:
+  sample_rate: 1000000
+  carrier_freq: 100000
+  symbol_rate: 50000
+
+channel:
+  snr_db: 20              # 20 dB SNR
+  noise_factor: 0.1
