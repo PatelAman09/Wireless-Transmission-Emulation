@@ -1,0 +1,18 @@
+services:
+  simurf:
+    build: .
+    container_name: simurf-emulator
+    network_mode: "host"
+    privileged: true
+    volumes:
+      - ./simurf_data:/simurf
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
