@@ -1,0 +1,15 @@
+{
+  "source_ip": "0.0.0.0",
+  "dest_ip": "0.0.0.0",
+  "interface": "eth0",
+  "enable_channel_sim": true,
+  "packet_loss_rate": 0.01,
+  "latency_ms": 10,
+  "channel_params": {
+    "carrier_freq": 2400000000,
+    "sample_rate": 20000000,
+    "snr": 15,
+    "delay_spread": 5e-08,
+    "doppler": 10
+  }
+}
