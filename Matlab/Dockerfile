@@ -9,28 +9,20 @@ RUN apt-get update && apt-get install -y \
     procps \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip3 install numpy scipy scapy
+# Install Python dependencies including MATLAB Engine API
+RUN pip3 install numpy scipy scapy matlabengine
 
 # Create working directory
 WORKDIR /simurf
 
-# Copy ALL files from current directory
+# Copy project files
 COPY . .
 
-# Verify files were copied
-RUN echo "🔍 Checking files in container..." && \
-    ls -la && \
-    echo "📁 python_components contents:" && \
-    ls -la python_components/ || echo "python_components not found!" && \
-    echo "📁 config contents:" && \
-    ls -la config/ || echo "config not found!"
-
 # Create directories
-RUN mkdir -p /simurf/input /simurf/output /simurf/logs
+RUN mkdir -p /simurf/input /simurf/output /simurf/logs /simurf/matlab_components
 
 # Set Python to not buffer output
 ENV PYTHONUNBUFFERED=1
 
-# Start the application
-CMD ["python3", "python_components/network_manager.py"]
+# Start with MATLAB-enhanced version
+CMD ["python3", "python_components/network_manager_matlab.py"]
