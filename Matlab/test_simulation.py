@@ -1,8 +1,5 @@
-#!/usr/bin/env python3
 import time
-import socket
 from scapy.all import IP, UDP, TCP, ICMP, Raw, send
-import threading
 
 def test_basic_packets():
     """Send test packets to see SimuRF processing"""
