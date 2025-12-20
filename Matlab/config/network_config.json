@@ -1,8 +1,6 @@
 {
-    "input_interface": "eth0",
-    "output_interface": "eth1", 
-    "destination_ip": "192.168.1.100",
-    "packet_timeout": 0.1,
-    "max_packet_size": 1500,
-    "enable_logging": true
+  "input_interface": "eth0",
+  "output_interface": "eth1",
+  "packet_timeout": 0.1,
+  "max_packet_size": 1500
 }

@@ -1,9 +1,8 @@
 {
-    "snr_db": 20,
-    "channel_model": "Rayleigh",
-    "modulation_scheme": "QPSK",
-    "carrier_frequency": 2400000000,
-    "sample_rate": 10000000,
-    "doppler_shift": 100,
-    "enable_visualization": true
+  "snr_db": 20,
+  "channel_model": "Rayleigh",
+  "modulation_scheme": "QPSK",
+  "carrier_frequency": 2400000000,
+  "sample_rate": 10000000,
+  "doppler_shift": 100
 }

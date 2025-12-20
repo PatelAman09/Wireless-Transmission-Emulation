@@ -1,30 +1,14 @@
-FROM python:3.9-slim
+FROM ubuntu:22.04
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    net-tools \
-    iproute2 \
-    tcpdump \
-    iputils-ping \
-    procps \
-    wget \
-    unzip \
+RUN apt update && apt install -y \
+    python3 python3-pip \
+    iproute2 net-tools \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies (without matlabengine for now)
-RUN pip3 install numpy scipy scapy
+# MATLAB must be installed or mounted
+# Install MATLAB engine for Python here
 
-# Create working directory
 WORKDIR /simurf
+COPY . /simurf
 
-# Copy project files
-COPY . .
-
-# Create directories
-RUN mkdir -p /simurf/input /simurf/output /simurf/logs /simurf/matlab_components
-
-# Set Python to not buffer output
-ENV PYTHONUNBUFFERED=1
-
-# Start with Python-only version for now
-CMD ["python3", "python_components/network_manager_matlab.py"]
+CMD ["python3", "python_components/main.py"]

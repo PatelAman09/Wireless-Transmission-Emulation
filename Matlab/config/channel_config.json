@@ -1,7 +1,0 @@
-{
-    "snr_db": 20,
-    "multipath_enabled": true,
-    "freq_offset": 0.01,
-    "delay_taps": [1.0, 0.5, 0.2],
-    "channel_model": "awgn"
-}
