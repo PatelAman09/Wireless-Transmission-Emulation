@@ -1,5 +1,4 @@
 import socket
-import struct
 
 ETH_HEADER_LEN = 14
 
@@ -9,5 +8,5 @@ def capture_packet(interface="eth0", max_size=1600):
 
     raw_packet, _ = s.recvfrom(max_size)
 
-    eth_payload = raw_packet[ETH_HEADER_LEN:]
-    return eth_payload, raw_packet
+    payload = raw_packet[ETH_HEADER_LEN:]
+    return payload, raw_packet

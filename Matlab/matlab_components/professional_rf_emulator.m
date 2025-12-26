@@ -13,11 +13,11 @@ function [complex_samples, channel_info] = professional_rf_emulator(ip_packet_by
     end
     config = load_config(config_file);
     
-    fprintf('📡 Configuration: %s, SNR: %d dB\n', config.channel_model, config.snr_db);
+    fprintf('Configuration: %s, SNR: %d dB\n', config.channel_model, config.snr_db);
     
     % Convert IP packet to binary stream
     binary_data = ip_to_binary(ip_packet_bytes);
-    fprintf('🔢 Input: %d bytes -> %d bits\n', length(ip_packet_bytes), length(binary_data));
+    fprintf('Input: %d bytes -> %d bits\n', length(ip_packet_bytes), length(binary_data));
     
     % Advanced modulation
     modulated_signal = advanced_modulation(binary_data, config);
@@ -28,7 +28,7 @@ function [complex_samples, channel_info] = professional_rf_emulator(ip_packet_by
     % Generate complex samples
     complex_samples = received_signal;
     
-    fprintf('✅ Processing complete: %d complex samples generated\n', length(complex_samples));
+    fprintf('Processing complete: %d complex samples generated\n', length(complex_samples));
 end
 
 function config = load_config(config_file)
@@ -46,7 +46,7 @@ function config = load_config(config_file)
         
     catch
         % Default configuration
-        fprintf('⚠️  Using default configuration\n');
+        fprintf('Using default configuration\n');
         config.snr_db = 20;
         config.channel_model = 'Rayleigh';
         config.modulation_scheme = 'QPSK';
@@ -68,7 +68,7 @@ end
 
 function modulated_signal = advanced_modulation(binary_data, config)
 % Advanced modulation schemes
-    fprintf('🎛️  Modulation: %s\n', config.modulation_scheme);
+    fprintf('Modulation: %s\n', config.modulation_scheme);
     
     switch config.modulation_scheme
         case 'BPSK'
@@ -132,7 +132,7 @@ end
 
 function [received_signal, channel_info] = professional_channel_simulation(tx_signal, config)
 % Professional wireless channel simulation
-    fprintf('🌊 Channel: %s model\n', config.channel_model);
+    fprintf('Channel: %s model\n', config.channel_model);
     
     % Initialize channel info
     channel_info.snr_db = config.snr_db;

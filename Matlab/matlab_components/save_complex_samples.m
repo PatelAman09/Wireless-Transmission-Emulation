@@ -12,5 +12,5 @@ function save_complex_samples(complex_samples, filename)
     fwrite(fid, interleaved, 'float32');
     fclose(fid);
     
-    fprintf('💾 Saved %d samples to %s\n', length(complex_samples), filename);
+    fprintf('Saved %d samples to %s\n', length(complex_samples), filename);
 end

@@ -3,20 +3,22 @@ import numpy as np
 import time
 import os
 
+
 class SimuRFMatlab:
-    def __init__(self, config_path):
+    def __init__(self, config_path: str):
         """
         Starts MATLAB engine and prepares RF simulation environment
         """
         print("[SimuRF] Launching MATLAB engine (this may take up to 1 minute)...")
         start_time = time.time()
 
+        # Start MATLAB
         self.eng = matlab.engine.start_matlab()
 
         elapsed = time.time() - start_time
         print(f"[SimuRF] MATLAB engine started in {elapsed:.1f} seconds")
 
-        # Add MATLAB source folder
+        # Add MATLAB source directory to path
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         matlab_dir = os.path.join(base_dir, "matlab_components")
 
@@ -25,18 +27,17 @@ class SimuRFMatlab:
         self.config_path = config_path
 
     def simulate(self, payload_bytes: bytes):
-        """
-        Run Mode-A RF simulation in MATLAB
-        """
         matlab_bytes = matlab.uint8(list(payload_bytes))
 
         complex_samples, channel_info = self.eng.professional_rf_emulator(
-            matlab_bytes,
-            self.config_path,
-            nargout=2
-        )
+        matlab_bytes,
+        self.config_path,
+        nargout=2
+    )
 
-        iq = np.array(complex_samples, dtype=np.complex64)
+    # Correct MATLAB → NumPy conversion (complex-safe)
+        iq = np.array(complex_samples, dtype=np.complex64).flatten(order="F")
+
         return iq, channel_info
 
     def close(self):

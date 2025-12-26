@@ -1,6 +1,5 @@
 {
-  "input_interface": "eth0",
-  "output_interface": "eth1",
-  "packet_timeout": 0.1,
+  "input_interface": "wlp8s0",
+  "output_interface": "wlp8s0",
   "max_packet_size": 1500
 }
