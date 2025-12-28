@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# shared is at project root
+COPY shared ./shared
+
+# sender_app.py is inside sender/
+COPY sender/sender_app.py .
+
+CMD ["python", "sender_app.py"]

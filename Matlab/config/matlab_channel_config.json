@@ -2,12 +2,14 @@
   "snr_db": 20,
   "channel_model": "Rayleigh",
   "modulation_scheme": "QPSK",
-  "carrier_frequency": 2400000000,
   "sample_rate": 10000000,
   "doppler_shift": 100,
+
   "use_fec": false,
   "use_pulse_shaping": true,
+
   "multipath_delays": [0, 10, 20],
   "multipath_gains": [1.0, 0.5, 0.25],
+
   "interference_power_db": -20
 }

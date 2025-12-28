@@ -1,51 +1,41 @@
-version: '3.8'
-
 services:
-  # Sender Container - Generates UDP traffic
   sender:
     build:
       context: .
-      dockerfile: Dockerfile.sender
+      dockerfile: sender/Dockerfile.sender
     container_name: simurf_sender
-    network_mode: host  # Uses localhost
-    environment:
-      - DESTINATION_IP=127.0.0.1
-      - DESTINATION_PORT=5000
-      - PACKET_RATE=10
-      - PAYLOAD_SIZE=1024
-    volumes:
-      - ./logs:/logs
-    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - simurf_net
 
-  # Receiver Container - Receives and analyzes packets
   receiver:
     build:
       context: .
-      dockerfile: Dockerfile.receiver
+      dockerfile: receiver/Dockerfile.receiver
     container_name: simurf_receiver
-    network_mode: host  # Uses localhost
-    environment:
-      - LISTEN_PORT=5000
-      - LOG_FILE=/logs/receiver.log
+    ports:
+      - "6000:6000/udp"
     volumes:
-      - ./logs:/logs
-      - ./received_data:/received_data
-    restart: unless-stopped
+      - simurf_logs:/logs
+    networks:
+      - simurf_net
 
-  # Analyzer Container - Real-time dashboard
   analyzer:
     build:
       context: .
-      dockerfile: Dockerfile.analyzer
+      dockerfile: analyzer/Dockerfile.analyzer
     container_name: simurf_analyzer
-    network_mode: host  # Uses localhost
-    volumes:
-      - ./logs:/logs
-      - ./output:/output
-      - ./analysis:/analysis
     ports:
       - "8080:8080"
-    depends_on:
-      - sender
-      - receiver
-    restart: unless-stopped
+    volumes:
+      - simurf_logs:/logs
+    networks:
+      - simurf_net
+
+volumes:
+  simurf_logs:
+
+networks:
+  simurf_net:
+    driver: bridge

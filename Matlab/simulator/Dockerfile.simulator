@@ -1,0 +1,45 @@
+FROM python:3.11-slim
+
+# -------------------------------
+# System libraries required by MATLAB
+# -------------------------------
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 \
+    libxext6 \
+    libsm6 \
+    libxrender1 \
+    libstdc++6 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# -------------------------------
+# Python virtual environment (PEP 668 safe)
+# -------------------------------
+ENV VENV_PATH=/opt/venv
+RUN python3 -m venv ${VENV_PATH}
+ENV PATH="${VENV_PATH}/bin:$PATH"
+
+# -------------------------------
+# Python deps (NO matlab.engine here)
+# -------------------------------
+RUN pip install --no-cache-dir numpy flask
+
+# -------------------------------
+# MATLAB runtime environment
+# MATLAB is mounted at runtime
+# -------------------------------
+ENV MATLAB_ROOT=/usr/local/MATLAB/R2025b
+ENV LD_LIBRARY_PATH=${MATLAB_ROOT}/bin/glnxa64:${LD_LIBRARY_PATH}
+ENV PATH=${MATLAB_ROOT}/bin:${PATH}
+ENV MATLAB_PREFDIR=/tmp/matlab
+
+# -------------------------------
+# Application code
+# -------------------------------
+WORKDIR /app
+
+# paths are RELATIVE TO BUILD CONTEXT (.)
+COPY shared ./shared
+COPY simulator/main.py simulator/simurf_matlab_bridge.py ./
+
+CMD ["python", "main.py"]
