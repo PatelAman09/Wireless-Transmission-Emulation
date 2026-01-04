@@ -2,8 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY analyzer/analyzer_app.py .
+COPY shared /app/shared
+COPY analyzer /app/analyzer
 
-RUN pip install --no-cache-dir flask
+ENV PYTHONPATH=/app
 
-CMD ["python", "analyzer_app.py"]
+RUN pip install matplotlib numpy
+
+CMD ["python", "analyzer/analyzer_app.py"]

@@ -1,75 +1,21 @@
-from flask import Flask, jsonify, render_template_string
-import os
+import socket
+import json
 
-LOG_FILE = "/logs/receiver.log"
-MAX_LINES = 50
+LISTEN_IP = "0.0.0.0"
+METRICS_PORT = 7000
+BUFFER_SIZE = 65535
 
-app = Flask(__name__)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((LISTEN_IP, METRICS_PORT))
 
+print("[Analyzer] Listening for metrics on port 7000", flush=True)
 
-def read_logs():
-    if not os.path.exists(LOG_FILE):
-        return []
+while True:
+    data, addr = sock.recvfrom(BUFFER_SIZE)
 
-    with open(LOG_FILE, "r") as f:
-        lines = f.readlines()[-MAX_LINES:]
+    metrics = json.loads(data.decode())
 
-    rows = []
-    for line in lines:
-        try:
-            seq, enc, dec, ber = line.strip().split("|")
-            rows.append({
-                "seq": seq,
-                "encrypted": enc + "...",
-                "decrypted": dec,
-                "ber": ber
-            })
-        except ValueError:
-            continue
-
-    return rows
-
-
-@app.route("/api/messages")
-def api_messages():
-    return jsonify(read_logs())
-
-
-@app.route("/")
-def index():
-    return render_template_string("""
-<!DOCTYPE html>
-<html>
-<head>
-  <title>SimuRF Dashboard</title>
-  <script>
-    async function load() {
-      const r = await fetch('/api/messages');
-      const d = await r.json();
-      document.getElementById('t').innerHTML =
-        d.map(m => `
-          <tr>
-            <td>${m.seq}</td>
-            <td>${m.encrypted}</td>
-            <td>${m.decrypted}</td>
-            <td>${m.ber}</td>
-          </tr>
-        `).join('');
-    }
-    setInterval(load, 1000);
-    load();
-  </script>
-</head>
-<body>
-  <h1>SimuRF Dashboard</h1>
-  <table border="1">
-    <tr><th>Seq</th><th>Encrypted</th><th>Decrypted</th><th>BER</th></tr>
-    <tbody id="t"></tbody>
-  </table>
-</body>
-</html>
-""")
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    print(
+        f"[Analyzer] Metrics received: {metrics}",
+        flush=True
+    )

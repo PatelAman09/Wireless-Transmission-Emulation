@@ -4,10 +4,13 @@ services:
       context: .
       dockerfile: sender/Dockerfile.sender
     container_name: simurf_sender
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      - receiver
     networks:
       - simurf_net
+    # Add extra_hosts so sender can reach host's simulator
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   receiver:
     build:
@@ -15,11 +18,12 @@ services:
       dockerfile: receiver/Dockerfile.receiver
     container_name: simurf_receiver
     ports:
-      - "6000:6000/udp"
-    volumes:
-      - simurf_logs:/logs
+      - "5001:5000/udp"  # Host:Container
     networks:
       - simurf_net
+    # Ensure output isn't buffered
+    environment:
+      - PYTHONUNBUFFERED=1
 
   analyzer:
     build:
@@ -27,14 +31,11 @@ services:
       dockerfile: analyzer/Dockerfile.analyzer
     container_name: simurf_analyzer
     ports:
-      - "8080:8080"
-    volumes:
-      - simurf_logs:/logs
+      - "7001:7000/udp"
     networks:
       - simurf_net
-
-volumes:
-  simurf_logs:
+    environment:
+      - PYTHONUNBUFFERED=1
 
 networks:
   simurf_net:

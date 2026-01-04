@@ -2,8 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# shared is now INSIDE the build context
-COPY shared ./shared
-COPY receiver/receiver_app.py .
+COPY shared /app/shared
+COPY receiver /app/receiver
+COPY config /app/config
 
-CMD ["python", "receiver_app.py"]
+ENV PYTHONPATH=/app
+
+CMD ["python", "receiver/receiver_app.py"]
