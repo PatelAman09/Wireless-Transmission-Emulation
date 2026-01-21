@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY shared /app/shared
+COPY receiver /app/receiver
+COPY config /app/config
+
+ENV PYTHONPATH=/app
+
+CMD ["python", "receiver/receiver_app.py"]

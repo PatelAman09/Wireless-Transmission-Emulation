@@ -1,0 +1,55 @@
+services:
+  simulator:
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile.simulator
+    container_name: simurf_simulator
+    ports:
+      - "5000:5000/udp"  # Receive from sender
+    networks:
+      - simurf_net
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - receiver
+      - analyzer
+
+  sender:
+    build:
+      context: .
+      dockerfile: sender/Dockerfile.sender
+    container_name: simurf_sender
+    depends_on:
+      - simulator
+    networks:
+      - simurf_net
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  receiver:
+    build:
+      context: .
+      dockerfile: receiver/Dockerfile.receiver
+    container_name: simurf_receiver
+    ports:
+      - "5001:5000/udp"  # External access (optional)
+    networks:
+      - simurf_net
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  analyzer:
+    build:
+      context: .
+      dockerfile: analyzer/Dockerfile.analyzer
+    container_name: simurf_analyzer
+    ports:
+      - "7001:7000/udp"  # External access (optional)
+    networks:
+      - simurf_net
+    environment:
+      - PYTHONUNBUFFERED=1
+
+networks:
+  simurf_net:
+    driver: bridge

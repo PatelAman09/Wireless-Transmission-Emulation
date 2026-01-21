@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY shared /app/shared
+COPY analyzer /app/analyzer
+
+ENV PYTHONPATH=/app
+
+RUN pip install matplotlib numpy
+
+CMD ["python", "analyzer/analyzer_app.py"]

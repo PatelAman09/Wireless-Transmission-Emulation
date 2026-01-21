@@ -1,0 +1,10 @@
+{
+  "snr_db": 28,
+  "sample_rate": 1000000,
+  "doppler_shift": 20,
+  "channel_model": "Rayleigh",
+  "multipath_delays": [0],
+  "multipath_gains": [1.0],
+  "interference_power_db": -40,
+  "use_fec": true
+}
