@@ -52,7 +52,7 @@ try:
     rf_pkg = rf_channel_pkg.initialize()
     
     # Initialize channel configuration
-    rf_pkg.init_channel(channel_cfg)
+    rf_pkg.init_channel(channel_cfg, nargout=0)
     
     print("[Simulator] MATLAB RF channel initialized")
     print(f"[Simulator] Channel config: SNR={channel_cfg['snr_db']} dB, "

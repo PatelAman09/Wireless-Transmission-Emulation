@@ -1,8 +1,11 @@
-# Force x86-64 platform since MATLAB Runtime doesn't support ARM
+# Force x86-64 platform (MATLAB Runtime doesn't support ARM)
 FROM --platform=linux/amd64 ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# --------------------------------------------------
+# Install system dependencies for MATLAB Runtime
+# --------------------------------------------------
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     wget \
@@ -30,7 +33,7 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------
-# Install Python + pip (REQUIRED for requirements.txt)
+# Install Python
 # --------------------------------------------------
 RUN apt-get update && apt-get install -y \
     python3 \
@@ -38,59 +41,62 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
  && rm -rf /var/lib/apt/lists/*
 
-
+# --------------------------------------------------
+# Download and Install MATLAB Runtime
+# --------------------------------------------------
 ARG MCR_RELEASE=R2025b
-ARG MCR_DIR=v25.1
 
 WORKDIR /tmp
 
+# Download MATLAB Runtime (~1.5 GB download)
 RUN echo "Downloading MATLAB Runtime ${MCR_RELEASE}..." && \
     wget -nv \
     "https://ssd.mathworks.com/supportfiles/downloads/${MCR_RELEASE}/Release/0/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_${MCR_RELEASE}_glnxa64.zip" \
-    -O mcr.zip && \
-    echo "Extracting installer (this may take a minute)..." && \
-    unzip -q mcr.zip -d mcr_installer && \
-    echo "Contents of installer directory:" && \
-    ls -la mcr_installer/ && \
-    echo "Looking for install script..." && \
-    find mcr_installer -name "install" -type f && \
-    echo "Installing MATLAB Runtime (5-10 minutes)..." && \
+    -O mcr.zip
+
+# Extract installer
+RUN echo "Extracting installer..." && \
+    unzip -q mcr.zip -d mcr_installer
+
+# Install MATLAB Runtime (takes 5-10 minutes)
+RUN echo "Installing MATLAB Runtime (this takes 5-10 minutes)..." && \
     cd mcr_installer && \
     chmod +x ./install && \
     ./install -mode silent -agreeToLicense yes -destinationFolder /opt/mcr && \
     cd .. && \
-    echo "Cleaning up..." && \
     rm -rf mcr.zip mcr_installer
 
-# ==================================================
-# MATLAB Runtime environment (MUST MATCH R2025b)
-# ==================================================
-ENV MCR_ROOT=/opt/mcr/v25.2
+# --------------------------------------------------
+# Set MATLAB Runtime environment variables
+# CRITICAL: These must match your MCR version
+# --------------------------------------------------
+ENV MCR_ROOT=/opt/mcr/${MCR_RELEASE}
 ENV LD_LIBRARY_PATH=${MCR_ROOT}/runtime/glnxa64:${MCR_ROOT}/bin/glnxa64:${MCR_ROOT}/sys/os/glnxa64:${MCR_ROOT}/extern/bin/glnxa64
 ENV XAPPLRESDIR=${MCR_ROOT}/X11/app-defaults
 
-
+# Verify installation
 RUN echo "Verifying MCR installation..." && \
     ls -la /opt/mcr && \
-    (ls -la /opt/mcr/${MCR_DIR} || ls -la /opt/mcr/)
+    ls -la ${MCR_ROOT}
 
+# --------------------------------------------------
+# Install application
+# --------------------------------------------------
 WORKDIR /app
 
+# Install Python dependencies
 COPY simulator/requirements.txt .
 RUN python3 -m pip install --upgrade pip && \
     python3 -m pip install --no-cache-dir -r requirements.txt
 
-## --------------------------------------------------
 # Install MATLAB-compiled Python package
-# --------------------------------------------------
-COPY matlab_compiled /tmp/matlab_compiled
-
+COPY matlab_components/matlab_compiled /tmp/matlab_compiled
 RUN cd /tmp/matlab_compiled && \
     echo "Installing rf_channel_pkg (MATLAB compiled)..." && \
     python3 -m pip install . && \
     rm -rf /tmp/matlab_compiled
 
-
+# Copy application files
 COPY shared/ /app/shared/
 COPY config/ /app/config/
 COPY simulator/simurf_matlab_bridge.py /app/
