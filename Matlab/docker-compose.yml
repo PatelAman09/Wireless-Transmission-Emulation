@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   sender:
     build:
@@ -6,11 +8,17 @@ services:
     container_name: simurf_sender
     depends_on:
       - receiver
+      - analyzer
     networks:
       - simurf_net
-    # Add extra_hosts so sender can reach host's simulator
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./config:/app/config:ro
+      - ./shared:/app/shared:ro
+    command: python sender/sender_app.py --scenario demo
 
   receiver:
     build:
@@ -18,12 +26,16 @@ services:
       dockerfile: receiver/Dockerfile.receiver
     container_name: simurf_receiver
     ports:
-      - "5001:5000/udp"  # Host:Container
+      - "5001:5000/udp"
     networks:
       - simurf_net
-    # Ensure output isn't buffered
     environment:
       - PYTHONUNBUFFERED=1
+    volumes:
+      - ./config:/app/config:ro
+      - ./shared:/app/shared:ro
+      - ./output:/app/output
+    command: python receiver/receiver_app.py --metrics-file /app/output/receiver_metrics.csv
 
   analyzer:
     build:
@@ -36,7 +48,14 @@ services:
       - simurf_net
     environment:
       - PYTHONUNBUFFERED=1
+    volumes:
+      - ./shared:/app/shared:ro
+      - ./output:/app/output
+    command: python analyzer/analyzer_app.py --output /app/output/analyzer_metrics.json
 
 networks:
   simurf_net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
